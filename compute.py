@@ -50,10 +50,6 @@ def compute_abg_from_rotation_matrix(rot):
     return (a, b, g)
 
 
-def compute_abg_from_pdb(target_mol, ref_mol):
-    pass
-
-
 class ABGComputer(object):
     # return object
     class ABGResults(object):
@@ -110,7 +106,7 @@ class ABGComputer(object):
         rot, rmsd2 = matvec.lsqfit(M2, ref2)
 
         a, b, g = compute_abg_from_rotation_matrix(rot)
-        print('%8.3f %8.3f %8.3f %8.3f %8.3f' % (a * 180. / math.pi, b * 180. / math.pi, g * 180. / math.pi, rmsd1, rmsd2))
+        return ABGComputer.ABGResults(a, b, g, rmsd1, rmsd2)
 
     # private methods
     def __reset_ref_resi(self):
@@ -157,47 +153,11 @@ def main():
     abg_computer = ABGComputer()
     target_res_1 = [int(x) for x in sys.argv[2].split(",")]
     target_res_2 = [int(x) for x in sys.argv[3].split(",")]
-    abg_computer.compute(sys.argv[1], target_res_1, target_res_2)
+    r = abg_computer.compute(sys.argv[1], target_res_1, target_res_2)
 
 
+    print('%8.3f %8.3f %8.3f %8.3f %8.3f' % (r.a * 180. / math.pi, r.b * 180. / math.pi, r.g * 180. / math.pi, r.rmsd1, r.rmsd2))
 
-    exit()
-
-    ref_mol = pdb_parser.Mol("iAformRNA.pdb")
-    hresi1 = [9, 10, 11, 34, 35, 36]
-    hresi2 = [12, 13, 14, 31, 32, 33]
-    target_mol = pdb_parser.Mol(sys.argv[1])
-    target_res_1 = [int(x) for x in sys.argv[2].split(",")]
-    target_res_2 = [int(x) for x in sys.argv[3].split(",")]
-
-    coords_1 = get_helix_coord_matrix(target_mol, target_res_1)
-    coords_2 = get_helix_coord_matrix(ref_mol, hresi1)
-    coords_1_reduced, coords_2_reduced = get_only_coords_shared(coords_1, coords_2)
-
-    M1 = np.array(coords_1_reduced)
-    M1 -= np.mean(M1, axis=0)
-    ref1 = np.array(coords_2_reduced)
-    ref1 -= np.mean(ref1, axis=0)
-    rot, rmsd1 = matvec.lsqfit(M1, ref1)
-
-    coords_1 = get_helix_coord_matrix(target_mol, target_res_2)
-    coords_2 = get_helix_coord_matrix(ref_mol, hresi2)
-    coords_1_reduced, coords_2_reduced = get_only_coords_shared(coords_1, coords_2)
-
-    M2 = np.array(coords_1_reduced)
-    M2 = np.dot(M2, rot)
-    M2 -= np.mean(M2, axis=0)
-    ref2 = np.array(coords_2_reduced)
-    ref2 -= np.mean(ref2, axis=0)
-
-    rot, rmsd2 = matvec.lsqfit(M2, ref2)
-    # print(rot)
-    # calculate Euler angles
-    a, b, g = compute_abg_from_rotation_matrix(rot)
-
-    print('%8.3f %8.3f %8.3f %8.3f %8.3f' % (a * 180. / math.pi, b * 180. / math.pi, g * 180. / math.pi, rmsd1, rmsd2))
-
-    #print(M1)
 
 if __name__ == "__main__":
     main()
