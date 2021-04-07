@@ -130,8 +130,15 @@ class ABGComputer(object):
         rot, rmsd2 = matvec.lsqfit(M2, ref2)
 
         a, b, g = compute_abg_from_rotation_matrix(rot)
-        last_bp_res_1 = target_resi_1[2:-2]
-        last_bp_res_2 = target_resi_2[2:-2]
+        if len(target_resi_1) == 6:
+            last_bp_res_1 = target_resi_1[2:-2]
+            last_bp_res_2 = target_resi_2[2:-2]
+        elif len(target_resi_1) == 2:
+            last_bp_res_1 = target_resi_1[1:-1]
+            last_bp_res_2 = target_resi_2[1:-1]
+        else:
+            last_bp_res_1 = target_resi_1
+            last_bp_res_2 = target_resi_2
         first_bp_coords = get_helix_coord_matrix(target_mol, last_bp_res_1)
         avg_bp_coords_1 = np.array([0.0, 0.0, 0.0])
         avg_bp_coords_1 += np.array(first_bp_coords["1,C1'"])
