@@ -1,4 +1,3 @@
-
 import sys
 import numpy as np
 import math
@@ -6,11 +5,12 @@ import argparse
 
 from abg import pdb_parser, matvec, settings
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-pdb', help='target_pdb', required=True)
-    parser.add_argument('-helix_1_res', help='residue nums in helix 1', required=True)
-    parser.add_argument('-helix_2_res', help='residue nums in helix 2', required=True)
+    parser.add_argument("-pdb", help="target_pdb", required=True)
+    parser.add_argument("-helix_1_res", help="residue nums in helix 1", required=True)
+    parser.add_argument("-helix_2_res", help="residue nums in helix 2", required=True)
     args = parser.parse_args()
     return args
 
@@ -62,9 +62,10 @@ def compute_abg_from_rotation_matrix(rot):
 class ABGComputer(object):
     # return object
     class ABGResults(object):
-        def __init__(self, a, b, g, rmsd1, rmsd2):
+        def __init__(self, a, b, g, rmsd1, rmsd2, x, y, z):
             self.a, self.b, self.g = a, b, g
             self.rmsd1, self.rmsd2 = rmsd1, rmsd2
+            self.x, self.y, self.z = x, y, z
 
     def __init__(self):
         self.ref_mol = pdb_parser.Mol(settings.AFORM_HELIX_PDB_PATH)
@@ -91,14 +92,28 @@ class ABGComputer(object):
         target_resi_2 would be [5, 6, 7, 11, 12, 14]
 
         """
-
+        target_resi_1.sort()
+        target_resi_2.sort()
+        self.__reset_ref_resi()
         target_mol = pdb_parser.Mol(pdb_path)
 
         # only 2, 4 or 6 residues is a valid arg
-        if not (len(target_resi_1) == 2 or len(target_resi_1) == 4 or len(target_resi_1) == 6):
-            raise ValueError("2,4,6 residues are the only valid number of residues allowed")
-        if not (len(target_resi_2) == 2 or len(target_resi_2) == 4 or len(target_resi_2) == 6):
-            raise ValueError("2,4,6 residues are the only valid number of residues allowed")
+        if not (
+            len(target_resi_1) == 2
+            or len(target_resi_1) == 4
+            or len(target_resi_1) == 6
+        ):
+            raise ValueError(
+                "2,4,6 residues are the only valid number of residues allowed"
+            )
+        if not (
+            len(target_resi_2) == 2
+            or len(target_resi_2) == 4
+            or len(target_resi_2) == 6
+        ):
+            raise ValueError(
+                "2,4,6 residues are the only valid number of residues allowed"
+            )
 
         # check if resi are valid
         for resi in target_resi_1 + target_resi_2:
@@ -115,15 +130,29 @@ class ABGComputer(object):
         rot, rmsd2 = matvec.lsqfit(M2, ref2)
 
         a, b, g = compute_abg_from_rotation_matrix(rot)
-        return ABGComputer.ABGResults(a, b, g, rmsd1, rmsd2)
+        last_bp_res_1 = target_resi_1[2:-2]
+        last_bp_res_2 = target_resi_2[2:-2]
+        first_bp_coords = get_helix_coord_matrix(target_mol, last_bp_res_1)
+        avg_bp_coords_1 = np.array([0.0, 0.0, 0.0])
+        avg_bp_coords_1 += np.array(first_bp_coords["1,C1'"])
+        avg_bp_coords_1 += np.array(first_bp_coords["2,C1'"])
+        avg_bp_coords_1 /= 2
+        second_bp_coords = get_helix_coord_matrix(target_mol, last_bp_res_2)
+        avg_bp_coords_2 = np.array([0.0, 0.0, 0.0])
+        avg_bp_coords_2 += np.array(second_bp_coords["1,C1'"])
+        avg_bp_coords_2 += np.array(second_bp_coords["2,C1'"])
+        avg_bp_coords_2 /= 2
+        diff = avg_bp_coords_1 - avg_bp_coords_2
+        x, y, z = diff
+
+        return ABGComputer.ABGResults(a, b, g, rmsd1, rmsd2, x, y, z)
 
     # private methods
     def __reset_ref_resi(self):
         self.ref_resi_1 = [9, 10, 11, 34, 35, 36]
         self.ref_resi_2 = [12, 13, 14, 31, 32, 33]
 
-
-    def __set_ref_resi_1(self, ref_resi ,target_length):
+    def __set_ref_resi_1(self, ref_resi, target_length):
         if target_length == 6:
             return ref_resi
         elif target_length == 4:
@@ -131,15 +160,13 @@ class ABGComputer(object):
         elif target_length == 2:
             return ref_resi[2:-2]
 
-
-    def __set_ref_resi_2(self, ref_resi ,target_length):
+    def __set_ref_resi_2(self, ref_resi, target_length):
         if target_length == 6:
             return ref_resi
         elif target_length == 4:
             return ref_resi[:2] + ref_resi[-2:]
         elif target_length == 2:
             return [ref_resi[0], ref_resi[-1]]
-
 
     def __get_helix_1_alignment(self, target_mol, target_res_1):
         coords_1 = get_helix_coord_matrix(target_mol, target_res_1)
@@ -152,7 +179,6 @@ class ABGComputer(object):
         ref1 -= np.mean(ref1, axis=0)
 
         return M1, ref1
-
 
     def __get_helix_2_alignment(self, target_mol, target_res_2, rot, M1):
         coords_1 = get_helix_coord_matrix(target_mol, target_res_2)
@@ -174,11 +200,20 @@ def main():
     target_res_2 = [int(x) for x in args.helix_2_res.split(",")]
     abg_computer = ABGComputer()
     r = abg_computer.compute(args.pdb, target_res_1, target_res_2)
-    print('%8.3f %8.3f %8.3f %8.3f %8.3f' % (r.a * 180. / math.pi, r.b * 180. / math.pi, r.g * 180. / math.pi, r.rmsd1, r.rmsd2))
+    print(
+        "%8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f"
+        % (
+            r.a * 180.0 / math.pi,
+            r.b * 180.0 / math.pi,
+            r.g * 180.0 / math.pi,
+            r.rmsd1,
+            r.rmsd2,
+            r.x,
+            r.y,
+            r.z
+        )
+    )
 
 
 if __name__ == "__main__":
     main()
-
-
-
