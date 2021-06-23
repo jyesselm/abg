@@ -133,7 +133,7 @@ class ABGComputer(object):
         if len(target_resi_1) == 6:
             last_bp_res_1 = target_resi_1[2:-2]
             last_bp_res_2 = target_resi_2[2:-2]
-        elif len(target_resi_1) == 2:
+        elif len(target_resi_1) == 4:
             last_bp_res_1 = target_resi_1[1:-1]
             last_bp_res_2 = target_resi_2[1:-1]
         else:
@@ -149,7 +149,7 @@ class ABGComputer(object):
         avg_bp_coords_2 += np.array(second_bp_coords["1,C1'"])
         avg_bp_coords_2 += np.array(second_bp_coords["2,C1'"])
         avg_bp_coords_2 /= 2
-        diff = avg_bp_coords_1 - avg_bp_coords_2
+        diff = avg_bp_coords_2 - avg_bp_coords_1
         x, y, z = diff
 
         return ABGComputer.ABGResults(a, b, g, rmsd1, rmsd2, x, y, z)

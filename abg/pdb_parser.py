@@ -441,7 +441,10 @@ def readatom(line, fmt='pdb'):
             atom.r = tuple(map(float, fds[5:8]))
             atom.charge = float(fds[8])
             atom.rad = float(fds[9])
-            atom.elem = fds[10]
+            if len(fd) >= 11:
+                atom.elem = fds[10]
+            else:
+                atom.elem = atom.name[0]
         except ValueError:
             print('ATOM line does not conform to pqr standard!\n')
             exit(1)
@@ -472,7 +475,10 @@ def readatom(line, fmt='pdb'):
                 atom.bf = 0.0
             #-------------------------------
             atom.sgid = line[72:76]
-            atom.elem = line[76:78].strip()
+            if len(line) > 76:
+                atom.elem = line[76:78].strip()
+            else:
+                atom.elem = atom.name[0]
         except ValueError:
             print('ATOM line does not conform to pdb standard!\n')
             exit(1)
