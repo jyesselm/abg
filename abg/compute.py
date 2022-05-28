@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import math
-import argparse
+import click
 
 from abg import pdb_parser, matvec, settings
 
@@ -51,7 +51,7 @@ def compute_abg_from_rotation_matrix(rot):
     A = np.array([a, a - math.pi, a + math.pi, a + math.pi, a - math.pi])
     B = np.array([b, -b, -b, -b, -b])
     G = np.array([g, g + math.pi, g - math.pi, g + math.pi, g - math.pi])
-    M = A ** 2 + B ** 2 + G ** 2
+    M = A**2 + B**2 + G**2
     idx = np.argmin(M)
     a = -A[idx]
     b = B[idx]
@@ -201,8 +201,10 @@ class ABGComputer(object):
         return M2, ref2
 
 
+@click.command(
+    help="a program to calculate the euler angles of alpha beta gamma of rna junctions"
+)
 def main():
-    args = parse_args()
     target_res_1 = [int(x) for x in args.helix_1_res.split(",")]
     target_res_2 = [int(x) for x in args.helix_2_res.split(",")]
     abg_computer = ABGComputer()
@@ -217,7 +219,7 @@ def main():
             r.rmsd2,
             r.x,
             r.y,
-            r.z
+            r.z,
         )
     )
 
