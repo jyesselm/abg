@@ -23,3 +23,6 @@ def setup_applevel_logger(logger_name=APP_LOGGER_NAME, is_debug=False, file_name
         logger.addHandler(fh)
 
     return logger
+
+def get_logger(module_name):
+   return logging.getLogger(APP_LOGGER_NAME).getChild(module_name)

@@ -2,17 +2,9 @@ import sys
 import numpy as np
 import math
 import click
+from dataclasses import dataclass
 
 from abg import pdb_parser, matvec, settings
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-pdb", help="target_pdb", required=True)
-    parser.add_argument("-helix_1_res", help="residue nums in helix 1", required=True)
-    parser.add_argument("-helix_2_res", help="residue nums in helix 2", required=True)
-    args = parser.parse_args()
-    return args
 
 
 def get_helix_coord_matrix(mol, target_res_nums):
@@ -59,14 +51,19 @@ def compute_abg_from_rotation_matrix(rot):
     return (a, b, g)
 
 
-class ABGComputer(object):
-    # return object
-    class ABGResults(object):
-        def __init__(self, a, b, g, rmsd1, rmsd2, x, y, z):
-            self.a, self.b, self.g = a, b, g
-            self.rmsd1, self.rmsd2 = rmsd1, rmsd2
-            self.x, self.y, self.z = x, y, z
+@dataclass(frozen=True, order=True)
+class ABGResults:
+    a: float  # alpha
+    b: float  # beta
+    g: float  # gamma
+    rmsd1: float  # rmsd of first helix to idealized
+    rmsd2: float  # rmsd of second helix to idealized
+    x: float
+    y: float
+    z: float
 
+
+class ABGComputer(object):
     def __init__(self):
         self.ref_mol = pdb_parser.Mol(settings.AFORM_HELIX_PDB_PATH)
         self.__reset_ref_resi()
@@ -152,7 +149,7 @@ class ABGComputer(object):
         diff = avg_bp_coords_2 - avg_bp_coords_1
         x, y, z = diff
 
-        return ABGComputer.ABGResults(a, b, g, rmsd1, rmsd2, x, y, z)
+        return ABGResults(a, b, g, rmsd1, rmsd2, x, y, z)
 
     # private methods
     def __reset_ref_resi(self):
@@ -199,30 +196,3 @@ class ABGComputer(object):
         ref2 = np.array(coords_2_reduced)
         ref2 -= np.mean(ref2, axis=0)
         return M2, ref2
-
-
-@click.command(
-    help="a program to calculate the euler angles of alpha beta gamma of rna junctions"
-)
-def main():
-    target_res_1 = [int(x) for x in args.helix_1_res.split(",")]
-    target_res_2 = [int(x) for x in args.helix_2_res.split(",")]
-    abg_computer = ABGComputer()
-    r = abg_computer.compute(args.pdb, target_res_1, target_res_2)
-    print(
-        "%8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f"
-        % (
-            r.a * 180.0 / math.pi,
-            r.b * 180.0 / math.pi,
-            r.g * 180.0 / math.pi,
-            r.rmsd1,
-            r.rmsd2,
-            r.x,
-            r.y,
-            r.z,
-        )
-    )
-
-
-if __name__ == "__main__":
-    main()

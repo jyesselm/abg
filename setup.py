@@ -10,10 +10,13 @@ setup(
     py_modules=[
         "abg/base",
         "abg/bio",
+        "abg/cli",
         "abg/compute",
-        "abg/matvec, abg/pdb_parser",
+        "abg/logger",
+        "abg/matvec",
+        "abg/pdb_parser",
         "abg/settings",
     ],
-    entry_points={"console_scripts": ["calc_abg = abg.compute:main"]},
+    entry_points={"console_scripts": ["calc_abg = abg.cli:main"]},
     include_package_data=True,
 )
